@@ -57,4 +57,9 @@ SUBSTRING(title FROM POSITION(' ' IN title)+ 6)
 AS title
 from winemag_p2
 WHERE country = 'Macedonia'
+FIX:
+select id,
+SUBSTRING(title FROM POSITION(' ' IN title)+ 1 FOR 4) AS year 
+from winemag_p2 
+where country ='Macedonia'
 
