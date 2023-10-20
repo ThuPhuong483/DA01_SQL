@@ -39,7 +39,22 @@ GROUP BY age_bucket
 ORDER BY age_bucket
 
 --EX4: no data
+SELECT customer_id  
+FROM customer_contracts
+LEFT JOIN products 
+ON customer_contracts.product_id = products.product_id
+GROUP BY customer_id 
+HAVING COUNT(DISTINCT product_category)>=3
+  
 --EX5:
+SELECT mng.reports_to AS employee_id, 
+emp.name,
+COUNT(mng.reports_to) AS reports_count,
+ROUND(AVG(mng.age),0) AS average_age
+FROM employees AS emp
+LEFT JOIN employees AS mng 
+ON emp.employee_id = mng.reports_to
+WHERE mng.reports_to IS NOT NULL 
 
 --EX6:
 SELECT product_name, SUM(unit) AS unit
