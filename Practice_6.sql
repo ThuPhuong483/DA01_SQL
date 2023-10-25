@@ -42,7 +42,7 @@ INNER JOIN twt_user_actions AS b
 ON a.user_id = b.user_id
 WHERE extract(month FROM a.event_date)='07'
 
---EX6:
+-----EX6:
 SELECT to_char(trans_date, 'yyyy-mm') AS month, country,
 COUNT(id) AS trans_count,
 SUM(CASE
