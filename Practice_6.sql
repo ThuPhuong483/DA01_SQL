@@ -55,7 +55,8 @@ END) AS approved_total_amount
 FROM Transactions AS a 
 GROUP BY to_char(trans_date, 'yyyy-mm'), country
   
---EX7:SELECT product_id, year AS first_year, quantity, price
+--EX7:
+SELECT product_id, year AS first_year, quantity, price
 FROM sales AS a
 WHERE year = (select min(year) from sales
 where product_id = a.product_id
