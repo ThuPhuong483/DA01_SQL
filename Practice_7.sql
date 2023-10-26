@@ -35,4 +35,15 @@ ORDER BY a.transaction_date , a.purchase_count
 --EX5:
 --EX6:
 --EX7:
+SELECT b.category, b.product, b.sum_spend AS total_spend
+FROM (SELECT a.category, a.product, a.sum_spend,
+RANK() OVER(PARTITION BY category ORDER BY a.sum_spend DESC) AS stt
+FROM (SELECT category, product,
+SUM(spend) AS sum_spend
+FROM product_spend
+WHERE to_char(DATE(transaction_date),'yyyy') ='2022' 
+GROUP BY category, product
+ORDER BY category, product) AS a ) AS b
+WHERE stt < 3
+
 --EX8:
