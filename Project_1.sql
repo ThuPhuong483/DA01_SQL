@@ -2,7 +2,7 @@
 SELECT * FROM sales_dataset_rfm_prj
 
 ALTER TABLE sales_dataset_rfm_prj
-ALTER COLUMN ordernumber TYPE numeric USING (trim(ordernumber)::numeric);
+ALTER COLUMN ordernumber TYPE interger USING (trim(ordernumber)::interger);
 
 ALTER TABLE sales_dataset_rfm_prj
 ALTER COLUMN quantityordered TYPE numeric USING (trim(quantityordered)::numeric);
@@ -11,7 +11,7 @@ ALTER TABLE sales_dataset_rfm_prj
 ALTER COLUMN priceeach TYPE numeric USING (trim(priceeach)::numeric);
 
 ALTER TABLE sales_dataset_rfm_prj
-ALTER COLUMN orderlinenumber TYPE numeric USING (trim(orderlinenumber)::numeric);
+ALTER COLUMN orderlinenumber TYPE interger USING (trim(orderlinenumber)::interger);
 
 ALTER TABLE sales_dataset_rfm_prj
 ALTER COLUMN sales TYPE numeric USING (trim(sales)::numeric);
@@ -29,22 +29,8 @@ ORDERNUMBER, QUANTITYORDERED, PRICEEACH, ORDERLINENUMBER, SALES, ORDERDATE.*/
 SELECT COUNT(*) FROM sales_dataset_rfm_prj
 
 SELECT * FROM sales_dataset_rfm_prj
-WHERE ordernumber IS NULL -----> ordernumber ko có giá trị NULL 
-
-SELECT * FROM sales_dataset_rfm_prj
-WHERE QUANTITYORDERED IS NULL -----> QUANTITYORDERED ko có giá trị NULL
-
-SELECT * FROM sales_dataset_rfm_prj
-WHERE PRICEEACH IS NULL -----> PRICEEACH ko có giá trị NULL
-
-SELECT * FROM sales_dataset_rfm_prj
-WHERE ORDERLINENUMBER IS NULL -----> ORDERLINENUMBER ko có giá trị NULL
-
-SELECT * FROM sales_dataset_rfm_prj
-WHERE SALES IS NULL -----> SALES ko có giá trị NULL
-
-SELECT * FROM sales_dataset_rfm_prj
-WHERE ORDERDATE IS NULL -----> ORDERDATE ko có giá trị NULL
+WHERE ordernumber IS NULL OR quantityordered IS NULL OR priceeach IS NULL OR orderlinenumber IS NULL 
+OR sales IS NULL OR orderdate IS NULL 
 
 /*3.Thêm cột CONTACTLASTNAME, CONTACTFIRSTNAME được tách ra từ CONTACTFULLNAME . 
 Chuẩn hóa CONTACTLASTNAME, CONTACTFIRSTNAME theo định dạng chữ cái đầu tiên viết hoa, 
@@ -102,7 +88,7 @@ percentile_cont(0.75) WITHIN GROUP(ORDER BY quantityordered) -
 percentile_cont(0.25) WITHIN GROUP(ORDER BY quantityordered) AS IQR
 FROM sales_dataset_rfm_prj) AS a)
 SELECT * FROM sales_dataset_rfm_prj
-WHERE quantityordered > (select min FROM twt_min_max) AND quantityordered < (select max FROM twt_min_max)
+WHERE quantityordered < (select min FROM twt_min_max) OR quantityordered > (select max FROM twt_min_max)
 
 -- CÁCH 2:
 WITH cte AS 
