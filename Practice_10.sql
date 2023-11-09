@@ -140,7 +140,7 @@ JOIN bigquery-public-data.thelook_ecommerce.products AS c
 ON a.product_id = c.id
 WHERE b.status='Complete'
 ORDER BY CAST(b.shipped_at AS DATE)) AS d
-WHERE d.dates>='2022-04-15'
+WHERE d.dates>='2022-04-15' AND d.dates=<'2022-07-15'
 GROUP BY d.dates, d.category 
 ORDER BY d.category, d.dates
 ----- Cách 2:
@@ -152,3 +152,26 @@ on a.product_id = b.id
 where DATE(created_at) BETWEEN '2022-02-15' AND '2022-04-15'
 group by 1,2
 order by 1
+
+
+
+
+
+
+
+/*RIGHT(LEFT(CAST(c.created_at AS string),7),2) AS month,
+LEFT(CAST(c.created_at AS string),4) AS year, */
+
+
+
+SELECT DATE(c.created_at),
+a.category AS product_category,
+SUM(b.sale_price) AS tpv,
+COUNT(b.product_id) AS tpo
+FROM bigquery-public-data.thelook_ecommerce.products AS a
+JOIN bigquery-public-data.thelook_ecommerce.order_items AS b
+ON a.id =b.product_id
+JOIN bigquery-public-data.thelook_ecommerce.orders AS c 
+ON c.order_id = b.order_id
+WHERE c.status='Complete'
+GROUP BY DATE(c.created_at),a.category
