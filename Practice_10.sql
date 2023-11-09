@@ -1,7 +1,7 @@
 /*1. Số lượng đơn hàng và số lượng khách hàng mỗi tháng
 Thống kê tổng số lượng người mua và số lượng đơn hàng đã hoàn thành mỗi tháng ( Từ
 1/2019-4/2022)
-Output: month_year ( yyyy-mm) , total_user, total_orde*/
+Output: month_year (yyyy-mm) , total_user, total_orde*/
 
 SELECT p.dmyy AS year_month,
 SUM(p.total_orde) AS total_orde,
@@ -11,7 +11,7 @@ FROM (SELECT id, num_of_item, CAST(shipped_at AS DATE) AS dmy
 FROM bigquery-public-data.thelook_ecommerce.users AS a
 JOIN bigquery-public-data.thelook_ecommerce.orders AS b 
 ON a.id=b.user_id
-WHERE status='Shipped' OR status='Complete') AS t
+WHERE status='Complete') AS t
 WHERE LEFT(CAST(t.dmy AS string),7) BETWEEN '2019-01' AND '2022-04'
 ) AS p 
 GROUP BY p.dmyy
@@ -38,9 +38,7 @@ FROM (SELECT a.id, sale_price, num_of_item, CAST(c.shipped_at AS DATE) AS dmy
 FROM bigquery-public-data.thelook_ecommerce.users AS a
 JOIN bigquery-public-data.thelook_ecommerce.order_items AS b 
 ON a.id=b.user_id
-JOIN bigquery-public-data.thelook_ecommerce.orders AS c 
-ON a.id=c.user_id
-WHERE c.status='Shipped' OR c.status='Complete') AS d
+JOIN c.status='Complete') AS d
 WHERE LEFT(CAST(d.dmy AS string),7) BETWEEN '2019-01' AND '2022-04') AS p
 GROUP BY p.dmyy
 ORDER BY p.dmyy
@@ -60,6 +58,49 @@ Insight là gì? (Trẻ nhất là bao nhiêu tuổi, số lượng bao nhiêu? 
 lượng bao nhiêu)
 Note: Lưu output vào temp table rồi đếm số lượng tương ứng*/
 
+--- Các khách hàng có trẻ tuổi nhất và lớn tuổi nhất theo từng giới tính ( Từ 1/2019-4/2022)
+SELECT *
+FROM (SELECT first_name, last_name, gender, age, 'youngest' AS tag
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04'
+AND age = (SELECT MIN(age)
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04')) AS a
+UNION ALL
+SELECT *
+FROM  (SELECT first_name, last_name, gender, age, 'oldest' AS tag 
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04'
+AND age = (SELECT MAX(age)
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04')) AS b
+  ---MIN(age) của Gender=F or gender=M đều là 12
+  ---MAX(age) của Gender=F or gender=M đều là 70
+--- Tạo bảng tạm thời 
+CREATE TEMP TABLE temp_count AS 
+(SELECT *
+FROM (SELECT first_name, last_name, gender, age, 'youngest' AS tag
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04'
+AND age = (SELECT MIN(age)
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04')) AS a
+UNION ALL
+SELECT *
+FROM  (SELECT first_name, last_name, gender, age, 'oldest' AS tag 
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04'
+AND age = (SELECT MAX(age)
+FROM bigquery-public-data.thelook_ecommerce.users
+WHERE LEFT(CAST(created_at AS string),7) BETWEEN '2019-01' AND '2022-04')) AS b);
+--- Đếm số lượng người già và người trẻ 
+SELECT count(tag) AS so_ng_tre_nhat, count(*)
+FROM temp_count
+WHERE tag ='youngest' --- có 1109 người trẻ nhất
+
+SELECT count(tag) AS so_ng_gia_nhat, count(*)
+FROM temp_count
+WHERE tag ='oldest' --- có 1145 người già nhất
 
 /*4.Top 5 sản phẩm mỗi tháng.
 Thống kê top 5 sản phẩm có lợi nhuận cao nhất từng tháng (xếp hạng cho từng sản phẩm).
@@ -78,7 +119,7 @@ JOIN bigquery-public-data.thelook_ecommerce.orders AS b
 ON a.order_id=b.order_id
 JOIN bigquery-public-data.thelook_ecommerce.products AS c 
 ON a.product_id = c.id
-WHERE b.status='Shipped' OR b.status='Complete') AS d) AS p
+WHERE b.status='Complete') AS d) AS p
 GROUP BY p.dmyy, p.id, p.name
 ORDER BY p.dmyy) AS q
 WHERE q.rank_per_month<=5
@@ -88,3 +129,26 @@ WHERE q.rank_per_month<=5
 Thống kê tổng doanh thu theo ngày của từng danh mục sản phẩm (category) trong 3 tháng
 qua ( giả sử ngày hiện tại là 15/4/2022)
 Output: dates (yyyy-mm-dd), product_categories, revenue*/
+----- Cách 1:
+SELECT d.dates, d.category AS product_categories,
+ROUND(SUM(d.retail_price),2) AS revenue
+FROM  (SELECT CAST(b.shipped_at AS DATE) AS dates, c.category, c.retail_price 
+FROM bigquery-public-data.thelook_ecommerce.order_items AS a 
+JOIN bigquery-public-data.thelook_ecommerce.orders AS b
+ON a.order_id=b.order_id
+JOIN bigquery-public-data.thelook_ecommerce.products AS c 
+ON a.product_id = c.id
+WHERE b.status='Complete'
+ORDER BY CAST(b.shipped_at AS DATE)) AS d
+WHERE d.dates>='2022-04-15'
+GROUP BY d.dates, d.category 
+ORDER BY d.category, d.dates
+----- Cách 2:
+select date(created_at), 
+b.category as product_categories,
+sum(a.sale_price) as revenue,
+from bigquery-public-data.thelook_ecommerce.order_items as a join bigquery-public-data.thelook_ecommerce.products as b
+on a.product_id = b.id
+where DATE(created_at) BETWEEN '2022-02-15' AND '2022-04-15'
+group by 1,2
+order by 1
