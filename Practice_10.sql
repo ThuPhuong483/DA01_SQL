@@ -1,3 +1,4 @@
+--- II. Ad-hoc tasks
 /*1. Số lượng đơn hàng và số lượng khách hàng mỗi tháng
 Thống kê tổng số lượng người mua và số lượng đơn hàng đã hoàn thành mỗi tháng ( Từ
 1/2019-4/2022)
@@ -154,24 +155,36 @@ group by 1,2
 order by 1
 
 
-
-
-
-
-
-/*RIGHT(LEFT(CAST(c.created_at AS string),7),2) AS month,
-LEFT(CAST(c.created_at AS string),4) AS year, */
-
-
-
-SELECT DATE(c.created_at),
+--- III. Tạo metric trước khi dựng dashboard
+--------Run bị lỗi, lỗi ở tạo bảng view
+CREATE VIEW vw_ecommerce_analyst AS (
+WITH twt_a AS 
+(SELECT *, 
+LAG(d.tpv,1) OVER(PARTITION BY d.product_category ORDER BY d.month_year) AS previous_tpv,
+LAG(d.tpo,1) OVER(PARTITION BY d.product_category ORDER BY d.month_year) AS previous_tpo
+FROM (SELECT LEFT(CAST(c.created_at AS string),7) AS month_year,
 a.category AS product_category,
 SUM(b.sale_price) AS tpv,
-COUNT(b.product_id) AS tpo
+COUNT(b.product_id) AS tpo,
+SUM(a.cost) AS total_cost,
+SUM(b.sale_price) - SUM(a.cost) AS total_profit,
+(SUM(b.sale_price) - SUM(a.cost))/SUM(a.cost) AS profit_to_cost_ratio 
 FROM bigquery-public-data.thelook_ecommerce.products AS a
-JOIN bigquery-public-data.thelook_ecommerce.order_items AS b
-ON a.id =b.product_id
-JOIN bigquery-public-data.thelook_ecommerce.orders AS c 
-ON c.order_id = b.order_id
+JOIN bigquery-public-data.thelook_ecommerce.order_items AS b ON a.id =b.product_id
+JOIN bigquery-public-data.thelook_ecommerce.orders AS c ON c.order_id = b.order_id
 WHERE c.status='Complete'
-GROUP BY DATE(c.created_at),a.category
+GROUP BY a.category, LEFT(CAST(c.created_at AS string),7)) AS d
+ORDER BY d.month_year ) 
+SELECT twt_a.month_year, twt_a.product_category, twt_a.tpv, twt_a.tpo,
+COALESCE(CAST((twt_a.tpv - twt_a.previous_tpv)/twt_a.previous_tpv AS numeric), 0) AS revenue_growth,
+COALESCE(CAST((twt_a.tpo - twt_a.previous_tpo)/twt_a.previous_tpo AS numeric), 0) AS order_growth,
+twt_a.total_cost, twt_a.total_profit, twt_a.profit_to_cost_ratio 
+FROM twt_a);
+
+
+
+
+
+
+
+
